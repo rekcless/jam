@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emerald Gold Prayer TV</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --emerald:#064e3b;
+  --emerald2:#065f46;
+  --gold:#d4af37;
+  --gold2:#f6e27a;
+}
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:'Poppins',sans-serif;
+}
+
+body{
+  height:100vh;
+  background:linear-gradient(135deg,var(--emerald),var(--emerald2));
+  color:white;
+  overflow:hidden;
+}
+
+/* Background kaligrafi */
+body::before{
+  content:"﷽";
+  position:absolute;
+  font-size:280px;
+  opacity:.05;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  color:var(--gold2);
+}
+
+.container{
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  padding:30px 50px;
+  position:relative;
+  z-index:2;
+}
+
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.clock{
+  font-size:70px;
+  font-weight:700;
+  color:var(--gold2);
+}
+
+.date{
+  font-size:18px;
+}
+
+.hijri{
+  font-size:20px;
+  color:var(--gold2);
+}
+
+.weather{
+  text-align:right;
+  font-size:15px;
+}
+
+.center{
+  text-align:center;
+}
+
+.countdown-title{
+  font-size:24px;
+  color:var(--gold2);
+}
+
+.countdown{
+  font-size:55px;
+  font-weight:700;
+}
+
+.progress{
+  width:60%;
+  height:10px;
+  background:rgba(255,255,255,.1);
+  margin:15px auto;
+  border-radius:10px;
+  overflow:hidden;
+}
+
+.progress-bar{
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg,var(--gold),var(--gold2));
+}
+
+.prayer-grid{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:15px;
+  margin-top:10px;
+}
+
+.card{
+  background:rgba(255,255,255,.05);
+  padding:15px;
+  border-radius:15px;
+  border:1px solid rgba(212,175,55,.3);
+  transition:.3s;
+}
+
+.card.active{
+  background:rgba(212,175,55,.2);
+  transform:scale(1.05);
+}
+
+.card h3{
+  color:var(--gold2);
+}
+
+.stats{
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  gap:10px;
+  margin-top:15px;
+}
+
+.stat-card{
+  background:rgba(255,255,255,.05);
+  padding:10px;
+  border-radius:12px;
+  border:1px solid rgba(212,175,55,.3);
+  font-size:13px;
+}
+
+.stat-card span{
+  display:block;
+  font-size:16px;
+  color:var(--gold2);
+}
+
+.quote{
+  margin-top:12px;
+  font-size:16px;
+  opacity:.9;
+  min-height:25px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="header">
+  <div>
+    <div class="clock" id="clock"></div>
+    <div class="date" id="date"></div>
+    <div class="hijri" id="hijri"></div>
+  </div>
+  <div class="weather" id="weather">Memuat cuaca...</div>
+</div>
+
+<div class="center">
+
+  <div class="countdown-title" id="nextPrayerText">
+    Menuju Waktu Sholat Selanjutnya
+  </div>
+
+  <div class="countdown" id="countdown">--:--:--</div>
+
+  <div class="progress">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+
+  <div class="prayer-grid" id="prayerGrid"></div>
+
+  <div class="stats">
+    <div class="stat-card">🌡 Suhu <span id="statTemp">-</span></div>
+    <div class="stat-card">💨 Angin <span id="statWind">-</span></div>
+    <div class="stat-card">🌅 Terbit <span id="statSunrise">-</span></div>
+    <div class="stat-card">🌇 Sunset <span id="statSunset">-</span></div>
+    <div class="stat-card">📅 Hari ke <span id="statDayOfYear">-</span></div>
+    <div class="stat-card">🌙 Fase <span id="statMoon">-</span></div>
+  </div>
+
+  <div class="quote" id="quote"></div>
+
+</div>
+</div>
+
+<script>
+
+// JAM
+function updateClock(){
+  const now=new Date();
+  document.getElementById("clock").innerText=
+    now.toLocaleTimeString('id-ID',{hour12:false});
+  document.getElementById("date").innerText=
+    now.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
+setInterval(updateClock,1000);
+updateClock();
+
+// CUACA + SUN
+fetch("https://api.open-meteo.com/v1/forecast?latitude=-7.5755&longitude=110.8243&current_weather=true&daily=sunrise,sunset&timezone=Asia/Jakarta")
+.then(res=>res.json())
+.then(data=>{
+  const w=data.current_weather;
+  document.getElementById("weather").innerHTML=
+    "🌤 "+w.temperature+"°C<br>Angin "+w.windspeed+" km/h";
+
+  document.getElementById("statTemp").innerText=w.temperature+"°C";
+  document.getElementById("statWind").innerText=w.windspeed+" km/h";
+  document.getElementById("statSunrise").innerText=
+    data.daily.sunrise[0].split("T")[1].slice(0,5);
+  document.getElementById("statSunset").innerText=
+    data.daily.sunset[0].split("T")[1].slice(0,5);
+});
+
+// PRAYER API
+fetch("https://api.aladhan.com/v1/timingsByCity?city=Surakarta&country=Indonesia&method=11")
+.then(res=>res.json())
+.then(data=>{
+  const timings=data.data.timings;
+  const hijri=data.data.date.hijri;
+
+  document.getElementById("hijri").innerText=
+    hijri.day+" "+hijri.month.en+" "+hijri.year+" H";
+
+  const prayers={
+    Subuh:timings.Fajr,
+    Dzuhur:timings.Dhuhr,
+    Ashar:timings.Asr,
+    Maghrib:timings.Maghrib,
+    Isya:timings.Isha
+  };
+
+  const grid=document.getElementById("prayerGrid");
+  for(let p in prayers){
+    grid.innerHTML+=`
+    <div class="card" id="${p}">
+      <h3>${p}</h3>
+      <div>${prayers[p]}</div>
+    </div>`;
+  }
+
+  startCountdown(prayers);
+});
+
+// COUNTDOWN
+function startCountdown(prayers){
+  setInterval(()=>{
+    const now=new Date();
+    let nextName=null,nextTime=null,prevTime=null;
+
+    for(let p in prayers){
+      let [h,m]=prayers[p].split(":");
+      let t=new Date();
+      t.setHours(h,m,0);
+      if(t>now){
+        nextName=p;
+        nextTime=t;
+        break;
+      }
+      prevTime=t;
+    }
+
+    if(!nextTime){
+      let [h,m]=prayers.Subuh.split(":");
+      let t=new Date();
+      t.setDate(t.getDate()+1);
+      t.setHours(h,m,0);
+      nextName="Subuh";
+      nextTime=t;
+    }
+
+    let diff=(nextTime-now)/1000;
+    let total=(nextTime-prevTime)/1000;
+    let progress=100-((diff/total)*100);
+
+    let hh=Math.floor(diff/3600);
+    let mm=Math.floor((diff%3600)/60);
+    let ss=Math.floor(diff%60);
+
+    document.getElementById("countdown").innerText=
+      String(hh).padStart(2,'0')+":"+
+      String(mm).padStart(2,'0')+":"+
+      String(ss).padStart(2,'0');
+
+    document.getElementById("nextPrayerText").innerText=
+      "Menuju Waktu Sholat "+nextName;
+
+    document.getElementById("progressBar").style.width=progress+"%";
+
+    document.querySelectorAll(".card").forEach(c=>c.classList.remove("active"));
+    if(document.getElementById(nextName)){
+      document.getElementById(nextName).classList.add("active");
+    }
+
+  },1000);
+}
+
+// DAY OF YEAR
+function getDayOfYear(){
+  const now=new Date();
+  const start=new Date(now.getFullYear(),0,0);
+  const diff=now-start;
+  return Math.floor(diff/(1000*60*60*24));
+}
+document.getElementById("statDayOfYear").innerText=getDayOfYear();
+
+// MOON PHASE
+function moonPhase(){
+  const now=new Date();
+  const lp=2551443;
+  const new_moon=new Date(1970,0,7,20,35,0);
+  const phase=((now-new_moon)/1000)%lp;
+  const index=Math.floor((phase/lp)*8);
+  const phases=["New","Waxing","Q1","Waxing G","Full","Waning G","Q3","Waning"];
+  return phases[index];
+}
+document.getElementById("statMoon").innerText=moonPhase();
+
+// QUOTE ROTATE
+const quotes=[
+"Sholat adalah tiang agama.",
+"Sebaik-baik amal adalah sholat tepat waktu.",
+"Barang siapa menjaga sholatnya, Allah akan menjaganya.",
+"Perbanyak dzikir, hati menjadi tenang."
+];
+
+let qi=0;
+setInterval(()=>{
+  document.getElementById("quote").innerText=quotes[qi];
+  qi=(qi+1)%quotes.length;
+},8000);
+
+</script>
+
+</body>
+</html>
